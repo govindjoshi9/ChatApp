@@ -1,8 +1,12 @@
-import './App.css'
+import axios from "axios";
+import Register from "./Register"
 
 function App() {
-
-  return <h1 className="text-3xl font-bold underline ">Hello world!</h1>;
+  axios.defaults.baseURL = "http://localhost:8080";
+  axios.defaults.withCredentials = true;
+  return (
+    <Register />
+  );
 }
 
 export default App
