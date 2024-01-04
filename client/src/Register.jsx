@@ -13,7 +13,7 @@ export default function Register() {
       const { data } = await axios.post(url, { username, password });
       setUsernameAsLongin(username);
       setId(data._id)
-      console.log(data);
+      // console.log(data);
       
        
     }
