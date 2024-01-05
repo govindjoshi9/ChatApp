@@ -1,9 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Avatar from "./Avatar";
+import Logo from "./Logo";
+import { UserContext } from "./userContext";
 
 export default function Chat() {
   const [ws, setWs] = useState(null);
   const [onlinePeople, setOnlinePeople] = useState({});
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const { username, id } = useContext(UserContext);
+  const [newMessageTest, setNewMessageTest] = useState('')
+  const [messages, setMessages] = useState([])
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8080");
     setWs(ws);
@@ -18,48 +24,79 @@ export default function Chat() {
   }
   function handleMessage(ev) {
     const messageData = JSON.parse(ev.data);
+    console.log({ev,messageData})
     if ("online" in messageData) {
       showOnlinePeople(messageData.online);
     }
+    else {
+      console.log({messageData})
+    }
+  }
+  const onlinePeopleOur = {...onlinePeople };
+  delete onlinePeopleOur[id];
+
+  function sendMessage(ev) {
+    ev.preventDefault();
+    // ws.send('test');
+    ws.send(JSON.stringify({
+      message: {
+        recipient: selectedUserId,
+        text: newMessageTest,
+      }
+    }));
+    setNewMessageTest('');
+    setMessages(prev => ([...prev,{text: newMessageTest,isOur:true}]))
   }
 
   return (
     <div className="flex h-screen">
-      <div className="bg-white w-1/3 pl-4 pt-4">
-        <div className="text-blue-600 font-bold flex gap-2 mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="1.5"
-            stroke="currentColor"
-            className="w-6 h-6"
+      <div className="bg-white w-1/3 ">
+        <Logo />
+        {Object.keys(onlinePeopleOur).map((userId) => (
+          <div
+            key={userId}
+            onClick={() => setSelectedUserId(userId)}
+            className={`border-b border-gray-100  flex items-center gap-2 cursor-pointer + ${
+              userId === selectedUserId ? "bg-blue-50" : ""
+            }`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
-            />
-          </svg>
-          Random Chat
-        </div>
-        {Object.keys(onlinePeople).map((userId) => (
-          <div className="border-b border-gray-100 py-2 flex items-center gap-2 cursor-pointer">
-            <Avatar username={onlinePeople[userId]} userId ={userId} />
-            <span>{onlinePeople[userId]}</span>
+            {userId === selectedUserId && (
+              <div className="w-1 bg-blue-500 h-12 rounded-r-md"></div>
+            )}
+            <div className="flex gap-2 pl-4 items-center">
+              <Avatar username={onlinePeople[userId]} userId={userId} />
+              <span>{onlinePeople[userId]}</span>
+            </div>
           </div>
         ))}
       </div>
 
       <div className="flex flex-col bg-blue-50 w-2/3 p-2">
-        <div className="flex-grow">messages with selected person</div>
-        <div className="flex gap-2 mx-2">
+        <div className="flex-grow">
+          {!selectedUserId && (
+            <div className="flex  h-full items-center flex-grow justify-center">
+              <div className="text-gray-400">&larr; Select a person for chat</div>
+            </div>
+          )}
+        </div>
+        {!!selectedUserId && (
+          <div >
+            {messages.map(message => {
+              <div>{message.text}</div>
+            })}
+          </div>
+          )}
+
+        {!!selectedUserId && (
+        <form className="flex gap-2 " onSubmit={sendMessage } >
           <input
             type="text"
+            value={newMessageTest}
+            onChange={ev=>setNewMessageTest(ev.target.value)}
             placeholder="Type your message here"
             className="bg-white flex-grow border rounded-sm p-2"
           />
-          <button className="bg-blue-500 p-2 text-white rounded-sm">
+          <button type="submit" className="bg-blue-500 p-2 text-white rounded-sm">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -75,7 +112,8 @@ export default function Chat() {
               />
             </svg>
           </button>
-        </div>
+        </form>
+        )}
       </div>
     </div>
   );
