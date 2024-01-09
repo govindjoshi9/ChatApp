@@ -1,22 +1,30 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import Logo from "./Logo";
 import { UserContext } from "./userContext";
-
+import { uniqBy } from "lodash";
+import axios from "axios";
 export default function Chat() {
   const [ws, setWs] = useState(null);
   const [onlinePeople, setOnlinePeople] = useState({});
+  const [offlinePeople, setOfflinePeople] = useState({});
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newMessageText, setNewMessageText] = useState("");
   const [messages, setMessages] = useState([]);
   const { id } = useContext(UserContext);
+  const divUnderMessage = useRef();
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8080");
-    setWs(ws);
+    connectTows();
+  }, []);
+
+  function connectTows() {
+     const ws = new WebSocket("ws://localhost:8080");
+     setWs(ws);
 
     ws.addEventListener("message", handleMessage);
-  }, []);
+    ws.addEventListener('close', () => connectTows());
+  }
 
   function showOnlinePeople(peopleArray) {
     const people = {};
@@ -28,16 +36,11 @@ export default function Chat() {
 
   function handleMessage(ev) {
     const messageData = JSON.parse(ev.data);
-    console.log({ev, messageData})
-    if ('online' in messageData) {
+    console.log({ ev, messageData });
+    if ("online" in messageData) {
       showOnlinePeople(messageData.online);
-    }
-    
-    else {
-      setMessages((prev) => [
-        ...prev,
-        { isOur: false, text: messageData.text },
-      ]);
+    } else if ("text" in messageData) {
+      setMessages((prev) => [...prev, { ...messageData }]);
     }
   }
 
@@ -47,17 +50,57 @@ export default function Chat() {
   function sendMessage(ev) {
     ev.preventDefault();
 
-      ws.send(
-        JSON.stringify({
-          message: {
-            recipient: selectedUserId,
-            text: newMessageText,
-          },
-        })
-      );
-      setNewMessageText("");
-      setMessages((prev) => [...prev, { isOur: true, text: newMessageText }]);
+    ws.send(
+      JSON.stringify({
+        message: {
+          recipient: selectedUserId,
+          text: newMessageText,
+        },
+      })
+    );
+    setNewMessageText("");
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: newMessageText,
+        sender: id,
+        recipient: selectedUserId,
+        _id: Date.now(),
+      },
+    ]);
+    
   }
+  useEffect(() => {
+    const div = divUnderMessage.current;
+    if(div) {
+      
+      div.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [messages])
+
+  useEffect(() => {
+    axios.get('/people').then(res => {
+      const offlinePeopleArr = res.data
+        .filter(p => p._id !== id)
+        .filter(p => !Object.keys(onlinePeople).includes(p._id));
+      const offlinePeople = {};
+      offlinePeopleArr.forEach(p => {
+        offlinePeople[p._id] =p
+      })
+     setOfflinePeople(offlinePeople)
+    })
+  },[onlinePeople])
+  
+  useEffect(() => {
+    if (selectedUserId) {
+      axios.get('/messages/' + selectedUserId).then(res => {
+        setMessages(res.data)
+
+      })
+    }
+  }, [selectedUserId]);
+
+  const messageWithoutDupes = uniqBy(messages, "_id");
 
   return (
     <div className="flex h-screen">
@@ -75,7 +118,7 @@ export default function Chat() {
               <div className="w-1 bg-blue-500 h-12 rounded-r-md"></div>
             )}
             <div className="flex gap-2 pl-4 items-center">
-              <Avatar username={onlinePeople[userId]} userId={userId} />
+              <Avatar online={true} username={onlinePeople[userId]} userId={userId} />
               <span>{onlinePeople[userId]}</span>
             </div>
           </div>
@@ -92,10 +135,29 @@ export default function Chat() {
             </div>
           )}
           {!!selectedUserId && (
-            <div>
-              {messages.map((message) => (
-                <div>{message.text}</div>
-              ))}
+            <div className="relative h-full">
+              <div className="overflow-y-scroll absolute top-0 left-0 right-0 bottom-2">
+                {messageWithoutDupes.map((message) => (
+                  <div key={message._id}
+                    className={
+                      message.sender == id ? "text-right" : "text-left"
+                    }
+                  >
+                    <div
+                      className={
+                        "text-left inline-block p-2 my-2 rounded-md text-sm " +
+                        (message.sender === id
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-gray-500")
+                      }
+                    >
+                      
+                      {message.text}
+                    </div>
+                  </div>
+                ))}
+                <div ref={divUnderMessage}></div>
+              </div>
             </div>
           )}
         </div>
@@ -105,7 +167,7 @@ export default function Chat() {
             <input
               type="text"
               value={newMessageText}
-              onChange={ev => setNewMessageText(ev.target.value)}
+              onChange={(ev) => setNewMessageText(ev.target.value)}
               placeholder="Type your message here"
               className="bg-white flex-grow border rounded-sm p-2"
             />
