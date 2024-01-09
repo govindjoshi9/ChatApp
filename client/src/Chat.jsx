@@ -7,14 +7,17 @@ export default function Chat() {
   const [ws, setWs] = useState(null);
   const [onlinePeople, setOnlinePeople] = useState({});
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const { username, id } = useContext(UserContext);
-  const [newMessageTest, setNewMessageTest] = useState('')
-  const [messages, setMessages] = useState([])
+  const [newMessageText, setNewMessageText] = useState("");
+  const [messages, setMessages] = useState([]);
+  const { id } = useContext(UserContext);
+
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8080");
     setWs(ws);
+
     ws.addEventListener("message", handleMessage);
   }, []);
+
   function showOnlinePeople(peopleArray) {
     const people = {};
     peopleArray.forEach(({ userId, username }) => {
@@ -22,30 +25,38 @@ export default function Chat() {
     });
     setOnlinePeople(people);
   }
+
   function handleMessage(ev) {
     const messageData = JSON.parse(ev.data);
-    console.log({ev,messageData})
-    if ("online" in messageData) {
+    console.log({ev, messageData})
+    if ('online' in messageData) {
       showOnlinePeople(messageData.online);
     }
+    
     else {
-      console.log({messageData})
+      setMessages((prev) => [
+        ...prev,
+        { isOur: false, text: messageData.text },
+      ]);
     }
   }
-  const onlinePeopleOur = {...onlinePeople };
+
+  const onlinePeopleOur = { ...onlinePeople };
   delete onlinePeopleOur[id];
 
   function sendMessage(ev) {
     ev.preventDefault();
-    // ws.send('test');
-    ws.send(JSON.stringify({
-      message: {
-        recipient: selectedUserId,
-        text: newMessageTest,
-      }
-    }));
-    setNewMessageTest('');
-    setMessages(prev => ([...prev,{text: newMessageTest,isOur:true}]))
+
+      ws.send(
+        JSON.stringify({
+          message: {
+            recipient: selectedUserId,
+            text: newMessageText,
+          },
+        })
+      );
+      setNewMessageText("");
+      setMessages((prev) => [...prev, { isOur: true, text: newMessageText }]);
   }
 
   return (
@@ -75,44 +86,49 @@ export default function Chat() {
         <div className="flex-grow">
           {!selectedUserId && (
             <div className="flex  h-full items-center flex-grow justify-center">
-              <div className="text-gray-400">&larr; Select a person for chat</div>
+              <div className="text-gray-400">
+                &larr; Select a person for chat
+              </div>
+            </div>
+          )}
+          {!!selectedUserId && (
+            <div>
+              {messages.map((message) => (
+                <div>{message.text}</div>
+              ))}
             </div>
           )}
         </div>
-        {!!selectedUserId && (
-          <div >
-            {messages.map(message => {
-              <div>{message.text}</div>
-            })}
-          </div>
-          )}
 
         {!!selectedUserId && (
-        <form className="flex gap-2 " onSubmit={sendMessage } >
-          <input
-            type="text"
-            value={newMessageTest}
-            onChange={ev=>setNewMessageTest(ev.target.value)}
-            placeholder="Type your message here"
-            className="bg-white flex-grow border rounded-sm p-2"
-          />
-          <button type="submit" className="bg-blue-500 p-2 text-white rounded-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-              className="w-6 h-6"
+          <form className="flex gap-2 " onSubmit={sendMessage}>
+            <input
+              type="text"
+              value={newMessageText}
+              onChange={ev => setNewMessageText(ev.target.value)}
+              placeholder="Type your message here"
+              className="bg-white flex-grow border rounded-sm p-2"
+            />
+            <button
+              type="submit"
+              className="bg-blue-500 p-2 text-white rounded-sm"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
-              />
-            </svg>
-          </button>
-        </form>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
+                />
+              </svg>
+            </button>
+          </form>
         )}
       </div>
     </div>
