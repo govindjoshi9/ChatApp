@@ -51,7 +51,7 @@ export default function Register() {
             <div>
               Don't have an account?{" "}
               <button onClick={() => setIsloginOrRegister("register")}>
-                Register here
+                Register 
               </button>
             </div>
           )}

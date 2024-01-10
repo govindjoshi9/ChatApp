@@ -8,6 +8,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const ws = require("ws");
+const fs = require('fs');
 const PORT = process.env.PORT || 8080;
 dotenv.config();
 async function connectToDatabase() {
@@ -18,7 +19,7 @@ async function connectToDatabase() {
     console.error("Error connecting to MongoDB:", error);
     process.exit(1);
   }
-}
+} 
 mongoose.connect("mongodb://127.0.0.1:27017/chatApp");
 
 // const jwtSecret = process.env.JWT_SECRET;
@@ -26,6 +27,7 @@ const jwtSecret = "sxrdctfvgybhctrfvygbhjnkmgfhbj";
 const bcryptSalt = bcrypt.genSaltSync(10);
 
 const app = express();
+app.use('/uploads', express.static(__dirname + '/uploads '));
 app.use(cors({ credentials: true, origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use(cookieParser());
@@ -95,6 +97,10 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.post('/logout', (req, res) =>{
+  res.cookie('token', '', {sameSite:'none' , secure:true}).json('ok')
+})
+
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -127,6 +133,34 @@ const server = app.listen(PORT, () => {
 
 const wss = new ws.WebSocketServer({ server });
 wss.on("connection", (connection, req) => {
+
+  function notifyAboutOnlinePeople() {
+    [...wss.clients].forEach((client) => {
+      client.send(
+        JSON.stringify({
+          online: [...wss.clients].map((c) => ({
+            userId: c.userId,
+            username: c.username,
+          })),
+        })
+      );
+    });
+  }
+
+  connection.isAlive = true;
+  connection.timer = setInterval(() => {
+    connection.ping();
+    connection.deathTimer = setTimeout(() => {
+      connection.isAlive = false;
+      clearInterval(connection.timer);
+      connection.terminate();
+      notifyAboutOnlinePeople();
+    },1000)
+  }, 5000);
+  connection.on('pong', () => {
+    clearTimeout(connection.deathTimer);
+  })
+
   //read username and id form the cookies for the this connection
   const cookies = req.headers.cookie;
   if (cookies) {
@@ -148,12 +182,26 @@ wss.on("connection", (connection, req) => {
 
   connection.on("message", async (message) => {
     const messageData = JSON.parse(message.toString());
-    const { recipient, text } = messageData.message;
-    if (recipient && text) {
+    const { recipient, text, file } = messageData.message;
+    const filename = null;
+    if (file) {
+      const parts = file.name.split('.');
+      const ext = parts[parts.length - 1];
+      const filename = Date.now() + '.' + ext;
+      const path = __dirname + '/uploads/' + filename;
+      const bufferdata = new Buffer(file.data, 'base64')
+      fs.writeFile(path, bufferdata, () => {
+        console.log('file save' +path)
+      } )
+    }
+        // console.log(messageData.message );
+
+    if (recipient && (text || file)) {
       const MessageDoc = await Message.create({
         sender: connection.userId,
         recipient,
         text,
+        file: file ? filename: null , 
       });
       [...wss.clients]
         .filter((c) => c.userId === recipient)
@@ -171,14 +219,5 @@ wss.on("connection", (connection, req) => {
   });
 
   // notify  everyone about people (when someone is connect)
-  [...wss.clients].forEach((client) => {
-    client.send(
-      JSON.stringify({
-        online: [...wss.clients].map((c) => ({
-          userId: c.userId,
-          username: c.username,
-        })),
-      })
-    );
-  });
+  notifyAboutOnlinePeople();
 });
