@@ -27,7 +27,7 @@ const jwtSecret = "sxrdctfvgybhctrfvygbhjnkmgfhbj";
 const bcryptSalt = bcrypt.genSaltSync(10);
 
 const app = express();
-app.use('/uploads', express.static(__dirname + '/uploads '));
+app.use('/uploads', express.static(__dirname + '/uploads'));
 app.use(cors({ credentials: true, origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use(cookieParser());
@@ -45,9 +45,7 @@ async function getUserdataFromRequest(req) {
     }
   });
 }
-app.get("/test", (req, res) => {
-  res.json("test ok");
-});
+
 
 app.get("/messages/:userId", async (req, res) => {
   const { userId } = req.params;
@@ -183,15 +181,15 @@ wss.on("connection", (connection, req) => {
   connection.on("message", async (message) => {
     const messageData = JSON.parse(message.toString());
     const { recipient, text, file } = messageData.message;
-    const filename = null;
+    let filename = null;
     if (file) {
       const parts = file.name.split('.');
       const ext = parts[parts.length - 1];
-      const filename = Date.now() + "." + ext;
-      const path = __dirname + '/uploads/' + filename;
+      filename = Date.now() + "." + ext;
+      const path = __dirname + "/uploads/" + filename;
       const bufferdata = new Buffer(file.data.split(',')[1], 'base64')
       fs.writeFile(path, bufferdata, () => {
-        console.log('file save' +path)
+        // console.log('file save' +path)
       } )
     }
     if (recipient && (text || file)) {

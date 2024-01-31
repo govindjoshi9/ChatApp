@@ -227,7 +227,7 @@ export default function Chat() {
                           </svg>
                           <a target="_blank"
                             className="flex items-center gap-1 underline border-b"
-                            href={axios.defaults.baseURL + "/uploads" + message.file}
+                            href={axios.defaults.baseURL + "/uploads/" + message.file}
                           >
                             {message.file}
                           </a>
