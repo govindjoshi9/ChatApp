@@ -5,7 +5,7 @@ export default function Register() {
     const [username, setUsername] = useState('');
   const [password, setPassword] = useState('')
   
-  const [isloginOrRegister, setIsloginOrRegister] = useState("register");
+  const [isloginOrRegister, setIsloginOrRegister] = useState("login");
   const { setUsername:setUsernameAsLongin, setId } = useContext(UserContext);
     async function register(ev) {
       ev.preventDefault();
@@ -19,23 +19,24 @@ export default function Register() {
     }
 
   return (
-    <div className="bg-blue-50 h-screen flex items-center">
+    <div className="bg-gray-500 h-screen flex items-center">
       <form className="w-64 mx-auto mb-12" onSubmit={register}>
+      <h2 className='flext text-center colo bg-slate-700 text-2xl rounded-lg mb-4 p-2 text-white '>Lets Start Chat</h2>
         <input
           value={username}
           onChange={(ev) => setUsername(ev.target.value)}
           type="text"
-          placeholder="username"
-          className="block w-full rounded-sm p-2 mb-2 border"
+          placeholder="User Name"
+          className="block w-full rounded-sm p-2 mb-2 border "
         />
         <input
           value={password}
           onChange={(ev) => setPassword(ev.target.value)}
           type="password"
-          placeholder="password"
+          placeholder="Password"
           className="block w-full rounded-sm p-2 mb-2 border"
         />
-        <button className="bg-blue-500 text-white block w-full rounded-sm">
+        <button className="bg-black text-white block w-full rounded-sm">
           {isloginOrRegister === "register" ? "Register" : "Login"}
         </button>
         <div className="text-center mt-2">
