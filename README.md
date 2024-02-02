@@ -120,9 +120,9 @@ If you have any questions or want to reach out:
 - GitHub: [YourUsername](https://github.com/govindjoshi9)
   
 ## ScreenShots
-![Uploading Screenshot (80).png…]()
-![Screenshot (77)](https://github.com/govindjoshi9/ChatApp/assets/79787938/f7153ea1-b30a-4ece-9df3-c321f89611d6)
 ![Screenshot (76)](https://github.com/govindjoshi9/ChatApp/assets/79787938/0fa50241-6351-4e63-b9ab-e85d75d365e7)
-![Screenshot (79)](https://github.com/govindjoshi9/ChatApp/assets/79787938/072ea7de-b93b-4e6d-981c-7124ccf68c4e)
+![Screenshot (77)](https://github.com/govindjoshi9/ChatApp/assets/79787938/f7153ea1-b30a-4ece-9df3-c321f89611d6)
 ![Screenshot (78)](https://github.com/govindjoshi9/ChatApp/assets/79787938/383bb9c3-394e-4da1-8960-2deac6c5e6a3)
+![Screenshot (79)](https://github.com/govindjoshi9/ChatApp/assets/79787938/072ea7de-b93b-4e6d-981c-7124ccf68c4e)
+![Screenshot (80)](https://github.com/govindjoshi9/ChatApp/assets/79787938/6efb9269-a508-4d9d-bbb7-6bad3b0cc8bb)
 
